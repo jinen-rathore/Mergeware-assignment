@@ -1,0 +1,90 @@
+<head>
+    <title>Loan Management App</title>
+  </head>
+  
+  <body>
+    {{> loginButtons}}
+    {{> dashboard}}
+  </body>
+  
+  <template name="dashboard">
+    {{#if currentUser}}
+      <h2>Welcome, {{currentUser.username}}!</h2>
+      
+      {{#if isInRole "admin"}}
+        <h3>Admin Dashboard</h3>
+        {{> adminDashboard}}
+      {{else}}
+        {{#if isInRole "borrower"}}
+          <h3>Borrower Dashboard</h3>
+          {{> borrowerDashboard}}
+        {{/if}}
+        {{#if isInRole "lender"}}
+          <h3>Lender Dashboard</h3>
+          {{> lenderDashboard}}
+        {{/if}}
+      {{/if}}
+    {{/if}}
+  </template>
+  
+  <template name="adminDashboard">
+    <h4>Loan Requests</h4>
+    <ul>
+      {{#each loans}}
+        <li>{{userId}} requested {{amount}}. Status: {{status}}</li>
+      {{/each}}
+    </ul>
+  </template>
+  
+  <template name="borrowerDashboard">
+    <h4>Loan Requests</h4>
+    <button onclick="requestLoan()">Request Loan</button>
+    <ul>
+      {{#each loans}}
+        <li>You requested {{amount}}. Status: {{status}}</li>
+      {{/each}}
+    </ul>
+  </template>
+  
+  <template name="lenderDashboard">
+    <h4>Approved Loans</h4>
+    <button onclick="payLoan()">Pay Loan</button>
+    <ul>
+      {{#each loans}}
+        {{#if isApproved}}
+          <li>Lender approved. Status: {{status}}</li>
+        {{/if}}
+      {{/each}}
+    </ul>
+  </template>
+  
+  <script>
+    Template.dashboard.helpers({
+      currentUser() {
+        return Meteor.user();
+      },
+      isInRole(role) {
+        return Roles.userIsInRole(Meteor.userId(), role);
+      },
+      loans() {
+        return Loans.find();
+      },
+      isApproved() {
+        return this.status === 'approved';
+      },
+    });
+  
+    Template.borrowerDashboard.events({
+      'click button'(event, instance) {
+        Meteor.call('loans.request', 100);
+      },
+    });
+  
+    Template.lenderDashboard.events({
+      'click button'(event, instance) {
+        const loanId = Loans.findOne({ status: 'approved' })._id;
+        Meteor.call('loans.pay', loanId, 100);
+      },
+    });
+  </script>
+  
